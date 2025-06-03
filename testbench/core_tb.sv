@@ -8,7 +8,7 @@
 // Georgia Institute of Technology
 // Atlanta, GA 30332
 //
-//  Engineer:   Zou, Ivan
+//  Engineer:   Antariksh Krishnan
 //  Module:     core_tb
 //  Functionality:
 //      This is the testbed for the 5 Stage Pipeline RISCV processor
@@ -52,17 +52,17 @@ module Core_tb;
     core_proc.InstructionFetch_Module.InstructionMemory.instr_RAM[2] = 8'h00;
     core_proc.InstructionFetch_Module.InstructionMemory.instr_RAM[3] = 8'h00;
 
-    // add x5, x5, x2
-		core_proc.InstructionFetch_Module.InstructionMemory.instr_RAM[4] = 8'h00;
-    core_proc.InstructionFetch_Module.InstructionMemory.instr_RAM[5] = 8'h22;
-    core_proc.InstructionFetch_Module.InstructionMemory.instr_RAM[6] = 8'h82;
-    core_proc.InstructionFetch_Module.InstructionMemory.instr_RAM[7] = 8'hb3;
+    //0x00002483 lw x9, 0(x0)
+	core_proc.InstructionFetch_Module.InstructionMemory.instr_RAM[4] = 8'h00;
+    core_proc.InstructionFetch_Module.InstructionMemory.instr_RAM[5] = 8'h00;
+    core_proc.InstructionFetch_Module.InstructionMemory.instr_RAM[6] = 8'h24;
+    core_proc.InstructionFetch_Module.InstructionMemory.instr_RAM[7] = 8'h83;
 
-    // sub x4, x12, x7
-		core_proc.InstructionFetch_Module.InstructionMemory.instr_RAM[8] = 8'h40;
-    core_proc.InstructionFetch_Module.InstructionMemory.instr_RAM[9] = 8'h76;
-    core_proc.InstructionFetch_Module.InstructionMemory.instr_RAM[10] = 8'h02;
-    core_proc.InstructionFetch_Module.InstructionMemory.instr_RAM[11] = 8'h33;
+    //0x002480b3 add x1, x9, x2
+	core_proc.InstructionFetch_Module.InstructionMemory.instr_RAM[8] = 8'h00;
+    core_proc.InstructionFetch_Module.InstructionMemory.instr_RAM[9] = 8'h24;
+    core_proc.InstructionFetch_Module.InstructionMemory.instr_RAM[10] = 8'h80;
+    core_proc.InstructionFetch_Module.InstructionMemory.instr_RAM[11] = 8'hb3;
 
 		#6 reset = 1'b0;
 
