@@ -1,17 +1,3 @@
-// ECE 3058 Architecture Concurrency and Energy in Computation
-//
-// RISCV Processor System Verilog Behavioral Model
-//
-// School of Electrical & Computer Engineering
-// Georgia Institute of Technology
-// Atlanta, GA 30332
-//
-//	Engineer: Zou, Ivan
-//  Functionality:
-//      Core Unit for the 5 Stage RISVC Processor
-//
-//***********************************************************
-
 import CORE_PKG::*;
 
 module Core (
@@ -28,16 +14,19 @@ module Core (
 	// Signals and outputs
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-	logic mem_gnt_req;																	// Memory is ready to inputs. Sent to inputs of Fetch and LSU 	
+	logic mem_gnt_req;																	// Memory is ready to inputs. Sent to inputs of Fetch and LSU
 
 	// Fetch Instruction Signals
 	logic [31:0] next_instr_addr; 											// PC + 4
 	logic [31:0] instr_mem_data;												// instruction that memory loads out
 	logic instr_mem_valid;															// validity of instruction loaded out
 
-	// Decode signals 
+	// Decode signals
 	pc_mux pc_mux_select;
 	logic [31:0] pc_branch_offset;
+
+	// Flush Signals -- my addition
+	logic flush_en;
 
 	// Load/Store Mem Signals
 	logic [31:0] DRAM_wdata;
@@ -45,7 +34,7 @@ module Core (
 	logic [31:0] load_mem_data; 												// data from LSU to Decode after a load instr.
 	logic mem_data_req_valid;														// Validity of request sent to mem for store/load
 
-	// ALU Signals 
+	// ALU Signals
 	alu_opcode_e alu_operator;													// operation that ALU should perform
 	logic [31:0] alu_operand_a;													// alu src register 1
 	logic [31:0] alu_operand_b;													// alu src register 2
@@ -117,9 +106,12 @@ module Core (
 		.pc_mux_ip(pc_mux_select),
 		.stall_ip(stall),
 
-		// Inputs from EX of possible new PC 
+		// Inputs from EX of possible new PC
 		.alu_result_ip(alu_next_pc_addr),
 		.alu_result_valid_ip(alu_next_pc_addr_valid),
+
+		// Input for Flush -- my addition
+		.flush_en_ip(flush_en),
 
 		// Outputs to Decode
 		.instr_valid_op(instr_mem_valid),
@@ -159,7 +151,7 @@ module Core (
 		.en_lsu_op(id_lsu_en_pt),
 		.lsu_operator_op(id_lsu_operator_pt),
 
-		// Outputs to MEM	
+		// Outputs to MEM
 		.mem_wdata_op(DRAM_wdata),
 
 		.EX_instruction_opcode(fwd_instr_opcode),
@@ -170,11 +162,14 @@ module Core (
 		.pc_branch_offset_op(pc_branch_offset),
 		.pc_mux_op(pc_mux_select),
 
-		.stall_op(stall)
+		.stall_op(stall),
+
+		// Inputs for Flush -- my addition
+		.flush_en_ip(flush_en)
 	);
 
 	FWD_Control ForwardController_Module (
-		.reset(reset), 
+		.reset(reset),
 
 		// Input from decode stage
 		.id_instr_opcode_ip(fwd_instr_opcode),
@@ -193,8 +188,8 @@ module Core (
 	);
 
 	EX_Stage InstructionExecute_Module (
-		.clock(clock), 
-		.reset(reset), 
+		.clock(clock),
+		.reset(reset),
 
 		// Inputs from Decode for ALU
 		.alu_enable_ip(alu_en),
@@ -207,9 +202,15 @@ module Core (
 		.fb_mux_ip(FB),
 		.fw_wb_data(writeback_data),
 
+		// Going to state signals for forwarding 
+		// Inputs from LSU
+		.lsu_dest_reg_data_ip(load_mem_data),
+		//from EX
+		.alu_result_fwd_ip(ex_alu_result_pt),
+
 		// Pass-Through Signals to Memory
 		.lsu_enable_pt_ip(id_lsu_en_pt),
-		.ex_lsu_operator_pt_ip(id_lsu_operator_pt), 
+		.ex_lsu_operator_pt_ip(id_lsu_operator_pt),
 		.mem_wdata_pt_ip(DRAM_wdata),
 		.ex_wb_mux_ip(id_wb_mux_op),
 		.ex_write_reg_addr_pt_ip(id_write_addr_reg_op),
@@ -218,8 +219,11 @@ module Core (
 
 		// Pass-Through to Fetch based on Flush Controller and Writeback
 		.pc_mux_ip(pc_mux_select),
-		// pc_branch offset to calculate branch address if 
+		// pc_branch offset to calculate branch address if
 		.pc_branch_offset_ip(pc_branch_offset),
+
+		//Outputs of Flush
+		.flush_en_op(flush_en),
 
 		// Outputs of Pass-Through Signals to Memory
 		.lsu_enable_pt_op(ex_lsu_en),
@@ -258,7 +262,7 @@ module Core (
 		// Inputs from DRAM
 		.mem_data_ip(DRAM_load_mem_data),
 
-		// pass through ALU result and valid signal to writeback 
+		// pass through ALU result and valid signal to writeback
 		.wb_alu_result_pt_ip(ex_alu_result_pt),
 		.wb_alu_result_valid_pt_ip(ex_alu_result_valid_pt),
 		.lsu_wb_mux_pt_ip(ex_wb_mux_pt),
@@ -285,7 +289,7 @@ module Core (
 		// General Inputs
 		.mem_en(mem_en),
 		.clock(clock),
-		
+
 		// Inputs from LSU
 		.data_req_ip(valid_mem_data_addr),
 
@@ -293,11 +297,11 @@ module Core (
 		.lsu_operator(ex_lsu_operator),
 		.wdata_ip(ex_DRAM_wdata),
 
-		// Passthrough Inputs from ALU. Get Wire that goes to 
+		// Passthrough Inputs from ALU. Get Wire that goes to
 		// the buffer of the LSU stage
 		.data_addr_ip(ex_alu_result_pt),
 
-		//Outputs 
+		//Outputs
 		.mem_gnt_op(mem_gnt_req),
 
 		// Outputs to Decode
@@ -305,7 +309,7 @@ module Core (
 	);
 
 	WB_Stage WriteBack_Module(
-		.reset(reset), 
+		.reset(reset),
 
 		// Forwarded execution results from ALU and mem stages
   	.WB_wb_mux_ip(lsu_wb_mux_pt),
