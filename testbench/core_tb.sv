@@ -1,19 +1,4 @@
 
-//***********************************************************
-// ECE 3058 Architecture Concurrency and Energy in Computation
-//
-// RISCV Processor System Verilog Behavioral Model
-//
-// School of Electrical & Computer Engineering
-// Georgia Institute of Technology
-// Atlanta, GA 30332
-//
-//  Engineer:   Antariksh Krishnan
-//  Module:     core_tb
-//  Functionality:
-//      This is the testbed for the 5 Stage Pipeline RISCV processor
-//
-//***********************************************************
 `timescale 1ns / 1ns
 
 module Core_tb;
