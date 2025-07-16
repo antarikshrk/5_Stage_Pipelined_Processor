@@ -1,72 +1,44 @@
-//***********************************************************
-// ECE 3058 Architecture Concurrency and Energy in Computation
-//
-// RISCV Processor System Verilog Behavioral Model
-//
-// School of Electrical & Computer Engineering
-// Georgia Institute of Technology
-// Atlanta, GA 30332
-//
-//  Module:     core_tb
-//  Functionality:
-//      Forward Controller for a 5 Stage RISCV Processor
-//
-//***********************************************************
-
 import CORE_PKG::*;
 
-module FWD_Control (
-  input logic reset, 
+module Fetch(
+  // General Inputs
+  input logic clock,
+  input logic reset,
+  input logic instr_gnt_ip,               // Input signal from DRAM to grant access
 
-  input [6:0] id_instr_opcode_ip, // ID/EX pipeline buffer opcode
+  input logic [31:0] Next_PC_ip,
 
-  input write_back_mux_selector EX_MEM_wb_mux_ip,
-  input write_back_mux_selector MEM_WB_wb_mux_ip,
+  // Outputs to MEM
+  output logic instr_req_op,              // Addr. signal sent is valid
+  output logic [31:0] instr_addr_op,      // Addr. containing the instruction in memory to fetch
 
-  input logic [4:0] EX_MEM_dest_ip, //EX/MEM Dest Register
-  input logic [4:0] MEM_WB_dest_ip, //MEM/WB Dest Register
-  input logic [4:0] ID_dest_rs1_ip, //Rs from decode stage
-  input logic [4:0] ID_dest_rs2_ip, //Rt from decode stage
-
-  output forward_mux_code fa_mux_op, //select lines for forwarding muxes (Rs)
-  output forward_mux_code fb_mux_op  //select lines for forwarding muxes (Rt)
+  output logic [31:0] pc_addr
 );
 
-  logic EX_MEM_RegWrite_en;
-  logic MEM_WB_RegWrite_en;
+  // Internal Signals
+  logic [31:0] PC, Next_PC;               // need 8 bits to encode 0-255 for DRAM access but for 32 bit address
 
-  assign EX_MEM_RegWrite_en = (EX_MEM_wb_mux_ip == NO_WRITEBACK) ? 1'b0 : 1'b1;
-  assign MEM_WB_RegWrite_en = (MEM_WB_wb_mux_ip == NO_WRITEBACK) ? 1'b0 : 1'b1;
+  assign Instr_or_Data_op = 0;            // drive low to inform memory that request if for instruction
+  assign pc_addr = PC;
 
   always @(*) begin
-    fa_mux_op = ORIGINAL_SELECT;
-    fb_mux_op = ORIGINAL_SELECT;
-
-    case (id_instr_opcode_ip)
-
-      OPCODE_OP: begin // Register-Register ALU operation
-
-        /**
-        * Task 2
-        * 
-        * Here you will need to check for hazards and decide if and what you will forward 
-        * For Register Register instructions, what registers are relevant for you to check 
-        */
-
-      end
-
-      OPCODE_OPIMM: begin // Register Immediate 
-
-        /**
-        * Task 2
-        * 
-        * Here you will need to check for hazards and decide if and what you will forward 
-        * For Register Register instructions, what registers are relevant for you to check
-        */
-
-      end
-
-    endcase
-
+    if (reset == 1'b1) begin
+      instr_addr_op = 0;
+      instr_req_op = 0;
+    end
+    else begin
+      instr_addr_op = Next_PC_ip;
+      instr_req_op = 1;
+    end
   end
+
+  // Output the actual PC addr to the IF Stage Pipeline buffer
+  always_ff @(posedge clock) begin
+    if (reset == 1'b1)
+      PC <= 0;
+    else 
+      PC <= Next_PC_ip;
+  end
+
+
 endmodule
