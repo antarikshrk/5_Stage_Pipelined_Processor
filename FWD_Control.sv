@@ -1,7 +1,24 @@
+//***********************************************************
+// ECE 3058 Architecture Concurrency and Energy in Computation
+//
+// RISCV Processor System Verilog Behavioral Model
+//
+// School of Electrical & Computer Engineering
+// Georgia Institute of Technology
+// Atlanta, GA 30332
+//
+//  Module:     core_tb
+//  Functionality:
+//      Forward Controller for a 5 Stage RISCV Processor
+//
+//***********************************************************
+
 import CORE_PKG::*;
 
+
+
 module FWD_Control (
-  input logic reset, 
+  input logic reset,
 
   input [6:0] id_instr_opcode_ip, // ID/EX pipeline buffer opcode
 
@@ -30,27 +47,45 @@ module FWD_Control (
     case (id_instr_opcode_ip)
 
       OPCODE_OP: begin // Register-Register ALU operation
+        if (ID_dest_rs1_ip !== 0) begin
+          if (EX_MEM_RegWrite_en && ID_dest_rs1_ip == EX_MEM_dest_ip) begin
+            fa_mux_op = EX_RESULT_SELECT;
+          end
+        else if (MEM_WB_RegWrite_en && ID_dest_rs1_ip == MEM_WB_dest_ip) begin
+            fa_mux_op = MEM_RESULT_SELECT;
+        end
+      end
+      if (ID_dest_rs2_ip != 0) begin
+        if (EX_MEM_RegWrite_en && ID_dest_rs2_ip == EX_MEM_dest_ip) begin
+          fb_mux_op = EX_RESULT_SELECT;
+        end
+      else if (MEM_WB_RegWrite_en && ID_dest_rs2_ip == MEM_WB_dest_ip) begin
+        fb_mux_op = MEM_RESULT_SELECT;
+      end
+    end
+    end  
 
-        /**
-        * Task 2
-        * 
-        * Here you will need to check for hazards and decide if and what you will forward 
-        * For Register Register instructions, what registers are relevant for you to check 
-        */
-
+      OPCODE_OPIMM: begin // Register Immediate
+        if (ID_dest_rs1_ip !== 0) begin
+          if (EX_MEM_RegWrite_en && ID_dest_rs1_ip == EX_MEM_dest_ip) begin
+            fa_mux_op = EX_RESULT_SELECT;
+          end
+        else if (MEM_WB_RegWrite_en && ID_dest_rs1_ip == MEM_WB_dest_ip) begin
+          fa_mux_op = MEM_RESULT_SELECT;
+        end
+      end
       end
 
-      OPCODE_OPIMM: begin // Register Immediate 
-
-        /**
-        * Task 2
-        * 
-        * Here you will need to check for hazards and decide if and what you will forward 
-        * For Register Register instructions, what registers are relevant for you to check
-        */
-
+      OPCODE_LOAD: begin
+        if (ID_dest_rs1_ip !== 0) begin
+          if (EX_MEM_RegWrite_en && ID_dest_rs1_ip == EX_MEM_dest_ip) begin
+            fa_mux_op = EX_RESULT_SELECT;
+          end
+          else if (MEM_WB_RegWrite_en && ID_dest_rs1_ip == MEM_WB_dest_ip) begin
+            fa_mux_op = MEM_RESULT_SELECT;
+          end
+        end
       end
-
     endcase
 
   end
